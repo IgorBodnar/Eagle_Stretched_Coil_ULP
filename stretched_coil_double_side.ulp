@@ -1,0 +1,225 @@
+/*
+MIT License
+
+Copyright (c) 2022 IgorBodnar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#usage "This ULP places a stretched coil in a board on both top and bottom layer.<p>"
+       "This ULP must be started from a board.<p>"
+       "The parameters of the stretched coil are:<ul>"
+       "<li>the number of turns 'n'</li>"
+       "<li>the wire width 'track_width' in mm</li>"
+       "<li>the length of the coil 'length' in mm</li>"
+       "<li>the width of the coil 'width' in mm</li>"
+       "<li>the inner length of the coil 'inner_length' in mm</li>"
+       "<li>the inner width of the coil 'inner_width' in mm</li></ul>"
+       "This ULP does not place any vias in order to connect the top half with the bottom, this is up to user to place.<p>"
+       "<author>Author: <a href='https://github.com/IgorBodnar/Eagle_Stretched_Coil_ULP'> Igor Bodnar</a></author>";
+
+/**
+  * Parameters of the dialog box.
+  */
+real length = 110;				// length of the stretched coil
+real width = 22;				// width of the stretched coil
+real inner_length = 4.099;		// inner length of the stretched coil
+real inner_width = 2.2;	        // inner width of the stretched coil
+real track_width = 0.15;		// width of the tracks forming the coil
+int n = 34;                     // number of turns
+
+// fuction to convert a real into string
+string dtostr (real d) {
+    if (d == 0){ return "0"; }
+    if (d == trunc(d))
+    {
+        string str = ""; sprintf(str, "%f", trunc(d)); return str;
+    }
+    string str = ""; sprintf(str, "%8f", d); return str; 
+}
+
+// function to display the debug information
+int Debug(string info) {
+  int nResult = dlgDialog("DEBUG INFORMATION") {
+        dlgTextEdit(info);
+        dlgPushButton("OK") dlgAccept();
+   };
+   return(nResult);
+}
+
+
+/**
+  * Initial variable used to build the command.
+  */
+string cmd = "";
+
+void execute(void){
+    
+    // caclulate the displacement in lengthwise and widthwise directions
+    real dis_w = (width - inner_width)/(2*(n-1));
+    real dis_l = (length - (n)*dis_w - inner_length)/(n-1);
+
+    // switch to the top layer of the board (layer 1);
+    cmd += "layer 1;\n";
+
+    // draw the top half of the stretched coil
+    cmd += "Line ";
+    cmd += dtostr(track_width);
+
+    
+    cmd += " (0 0)";
+
+    int i;
+    for (i = 1; i < n+1; i++){
+
+        // first point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(i-1)*dis_w);
+        cmd += " ";
+        cmd += dtostr(dis_w*(i-1));
+        cmd += ")";
+
+        // second point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(i-1)*dis_w);
+        cmd += " ";
+        cmd += dtostr(length-(i-1)*dis_l);
+        cmd += ")";
+
+        // third point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(i-1));
+        cmd += " ";
+        cmd += dtostr(length-(i-1)*dis_l);
+        cmd += ")";
+
+        // fourth point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(i-1));
+        cmd += " ";
+        cmd += dtostr(dis_w*i);
+        cmd += ")";
+    }
+    
+    cmd += ";\n";
+
+    // switch to the bottom layer of the board (layer 16)
+    cmd += "layer 16;\n";
+
+    // draw the bottom half of the stretched coil
+    cmd += "Line ";
+    cmd += dtostr(track_width);
+
+    
+    // starting point of the bottom half coil
+        cmd += " (";
+        cmd += dtostr(width-(n-1)*dis_w - 1);
+        cmd += " ";
+        cmd += dtostr(dis_w*(n-1+1));
+        cmd += ")";
+
+    int j;
+    for (j = 1; j < n+1; j++){
+
+        // first point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(n-j)*dis_w);
+        cmd += " ";
+        cmd += dtostr(dis_w*(n-j+1));
+        cmd += ")";
+
+        // second point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(n-j)*dis_w);
+        cmd += " ";
+        cmd += dtostr(length-(n-j)*dis_l);
+        cmd += ")";
+
+        // third point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(n-j));
+        cmd += " ";
+        cmd += dtostr(length-(n-j)*dis_l);
+        cmd += ")";
+
+        // fourth point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(n-j));
+        cmd += " ";
+        cmd += dtostr(dis_w*(n-j));
+        cmd += ")";
+    }
+    
+
+    cmd += ";";
+
+    string s = "";
+    sprintf(s, cmd);
+
+    // preview the command that EAGLE will execute 
+    Debug(s);
+
+    // perform the command
+    exit(s);
+}
+
+
+/**
+  * User interface of the ULP.
+  */
+dlgDialog("Stretched coil") {
+    dlgHBoxLayout {
+        dlgVBoxLayout {
+            dlgGridLayout {
+                dlgCell(1, 1) dlgLabel("<hr>");
+                dlgCell(1, 2) dlgLabel("<hr>");
+                dlgCell(2, 1) dlgLabel("Number of turns 'n'");                                       // input the number of turns 
+                dlgCell(2, 2) dlgIntEdit(n, 1, 100);
+                dlgCell(3, 1) dlgLabel("Length of coil 'length'");                                   // input the length of the coil
+                dlgCell(3, 2) dlgRealEdit(length, 0.01, 150.0);
+                dlgCell(4, 1) dlgLabel("Width of coil 'width'");                                     // input the width of the coil
+                dlgCell(4, 2) dlgRealEdit(width, 0.01, 150.0);
+                dlgCell(5, 1) dlgLabel("Inner length of the coil 'inner_length'");                   // input the inner length of the coil
+                dlgCell(5, 2) dlgRealEdit(inner_length, 0.01, 25.0);
+                dlgCell(6, 1) dlgLabel("Inner width of the coil 'inner_width'");                     // input the inner width of the coil
+                dlgCell(6, 2) dlgRealEdit(inner_width, 0.01, 25.0);
+                dlgCell(7, 1) dlgLabel("Track width in the coil 'track_width'");                     // input the track width
+                dlgCell(7, 2) dlgRealEdit(track_width, 0.1, 10.0);
+                dlgCell(8, 1) dlgLabel("<hr>");
+                dlgCell(8, 2) dlgLabel("<hr>");
+            }
+            dlgStretch(1);
+        }
+    }
+    dlgLabel("<qt>All measures are in <b>mm</b>.</qt>");
+    dlgHBoxLayout {
+        dlgPushButton("+&OK") {
+            dlgAccept();
+            execute();
+        }
+        dlgPushButton("-&Cancel") {
+            dlgReject();
+            exit(0);
+        }
+        dlgStretch(1);
+        dlgPushButton("&Help") {
+            dlgMessageBox(usage, "Ok");
+        }
+    }
+};

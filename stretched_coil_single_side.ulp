@@ -1,0 +1,209 @@
+Copyright (c) 2022 IgorBodnar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#usage "This ULP places a stretched coil in a board.<p>"
+       "This ULP must be started from a board.<p>"
+       "The parameters of the stretched coil are:<ul>"
+       "<li>the number of turns 'n'</li>"
+       "<li>the wire width 'track_width' in mm</li>"
+       "<li>the length of the coil 'length' in mm</li>"
+       "<li>the width of the coil 'width' in mm</li>"
+       "<li>the inner length of the coil 'inner_length' in mm</li>"
+       "<li>the inner width of the coil 'inner_width' in mm</li>"
+       "<li>the direction of winding the coil 'cw' either clockwise or anticlockwise</li></ul>"
+       "This ULP does not place anything else rather than the stretched coil tracks.<p>"
+       "<author>Author: <a href='https://github.com/IgorBodnar/Eagle_Stretched_Coil_ULP'> Igor Bodnar</a></author>";
+
+/**
+ * Parameters of the dialog box.
+ */
+real length = 110;				// length of the stretched coil
+real width = 22;				// width of the stretched coil
+real inner_length = 4.099;		// inner length of the stretched coil
+real inner_width = 2.2;	        // inner width of the stretched coil
+real track_width = 0.15;		// width of the tracks forming the coil
+int n = 5;                      // number of turns
+int cw = 0;                     // boolean indiacating clockwise or counter-clockwise
+
+
+string dtostr (real d) {
+    if (d == 0){ return "0"; }
+    if (d == trunc(d)){
+        string str = ""; sprintf(str, "%f", trunc(d)); return str;
+    }
+    string str = ""; sprintf(str, "%8f", d); return str; 
+} //real to string
+
+int Debug(string info) {
+  int nResult = dlgDialog("DEBUG INFORMATION") {
+        dlgTextEdit(info);
+        dlgPushButton("OK") dlgAccept();
+   };
+   return(nResult);
+}
+
+
+/**
+ * Variables to execute a command.
+ */
+string cmd = "";
+string strCmd;
+
+void doit(void){
+
+    real dis_w = (width - inner_width)/(2*(n-1));
+    real dis_l = (length - (n)*dis_w - inner_length)/(n-1);
+
+    cmd += "Line ";
+    cmd += dtostr(track_width);
+
+    if(cw == 1){
+    cmd += " (0 0)";
+
+    int i;
+    for (i = 1; i < n+1; i++){
+
+        // first point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(i-1)*dis_w);
+        cmd += " ";
+        cmd += dtostr(dis_w*(i-1));
+        cmd += ")";
+
+        // second point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(i-1)*dis_w);
+        cmd += " ";
+        cmd += dtostr(length-(i-1)*dis_l);
+        cmd += ")";
+
+        // third point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(i-1));
+        cmd += " ";
+        cmd += dtostr(length-(i-1)*dis_l);
+        cmd += ")";
+
+        // fourth point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(i-1));
+        cmd += " ";
+        cmd += dtostr(dis_w*i);
+        cmd += ")";
+    }
+    }
+
+    if(cw == 0){
+    // initial point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(n-1)*dis_w - 1);
+        cmd += " ";
+        cmd += dtostr(dis_w*(n-1+1));
+        cmd += ")";
+
+    int i;
+    for (i = 1; i < n+1; i++){
+
+        // first point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(n-i)*dis_w);
+        cmd += " ";
+        cmd += dtostr(dis_w*(n-i+1));
+        cmd += ")";
+
+        // second point in sequence
+        cmd += " (";
+        cmd += dtostr(width-(n-i)*dis_w);
+        cmd += " ";
+        cmd += dtostr(length-(n-i)*dis_l);
+        cmd += ")";
+
+        // third point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(n-i));
+        cmd += " ";
+        cmd += dtostr(length-(n-i)*dis_l);
+        cmd += ")";
+
+        // fourth point in sequence
+        cmd += " (";
+        cmd += dtostr(dis_w*(n-i));
+        cmd += " ";
+        cmd += dtostr(dis_w*(n-i));
+        cmd += ")";
+    }
+    }
+    
+
+    cmd += ";";
+
+    string s = "";
+    sprintf(s, cmd);
+    Debug(s);
+    exit(s);
+}
+
+
+/**
+ * Dialog box.
+ */
+dlgDialog("Stretched coil") {
+    dlgHBoxLayout {
+        dlgVBoxLayout {
+            dlgGridLayout {
+                dlgCell(1, 1) dlgLabel("<hr>");
+                dlgCell(1, 2) dlgLabel("<hr>");
+                dlgCell(2, 1) dlgLabel("Turns 'n'");                      
+                dlgCell(2, 2) dlgIntEdit(n, 1, 100);
+                dlgCell(3, 1) dlgLabel("Length of coil");                 
+                dlgCell(3, 2) dlgRealEdit(length, 0.01, 150.0);
+                dlgCell(4, 1) dlgLabel("Width of coil");                  
+                dlgCell(4, 2) dlgRealEdit(width, 0.01, 150.0);
+                dlgCell(5, 1) dlgLabel("Inner length");   
+                dlgCell(5, 2) dlgRealEdit(inner_length, 0.01, 25.0);
+                dlgCell(6, 1) dlgLabel("Inner width");
+                dlgCell(6, 2) dlgRealEdit(inner_width, 0.01, 25.0);
+                dlgCell(7, 1) dlgLabel("Track width");                   
+                dlgCell(7, 2) dlgRealEdit(track_width, 0.1, 10.0);
+                dlgCell(8, 1) dlgLabel("Clockwise");
+                dlgCell(8, 2) dlgCheckBox("", cw);
+                dlgCell(9, 1) dlgLabel("<hr>");
+                dlgCell(9, 2) dlgLabel("<hr>");
+            }
+            dlgStretch(1);
+        }
+    }
+    dlgLabel("<qt>All measures are in <b>mm</b>.</qt>");
+    dlgHBoxLayout {
+        dlgPushButton("+&OK") {
+            dlgAccept();
+            doit();
+        }
+        dlgPushButton("-&Cancel") {
+            dlgReject();
+            exit(0);
+        }
+        dlgStretch(1);
+        dlgPushButton("&Help") {
+            dlgMessageBox(usage, "Ok");
+        }
+    }
+};
