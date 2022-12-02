@@ -35,12 +35,12 @@ SOFTWARE.
 /**
  * Parameters of the dialog box.
  */
-real length = 110;				// length of the stretched coil
-real width = 22;				// width of the stretched coil
-real inner_length = 4.099;		// inner length of the stretched coil
-real inner_width = 2.2;	        // inner width of the stretched coil
-real track_width = 0.15;		// width of the tracks forming the coil
-int n = 5;                      // number of turns
+real length = 1.0;				// length of the stretched coil
+real width = 1.0;				// width of the stretched coil
+real inner_length = 1.0;		// inner length of the stretched coil
+real inner_width = 1.0;	        // inner width of the stretched coil
+real track_width = 1.0;		    // width of the tracks forming the coil
+int n = 1;                      // number of turns
 int cw = 0;                     // boolean indiacating clockwise or counter-clockwise
 
 
